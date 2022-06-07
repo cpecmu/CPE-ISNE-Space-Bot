@@ -69,7 +69,7 @@ async def on_member_join(member):
     await member.send(bot_messages.welcome_message_dm.format(member.id))
     await asyncio.sleep(5)
 
-    await member.send(bot_messages.verify_question_1)
+    await member.send(bot_messages.verify_question_0)
 
   key = "user_"+str(member.id)+"_verify_stage"
   db[key] = 0
@@ -91,26 +91,74 @@ async def on_message(message):
     key = "user_"+str(user.id)+"_verify_stage"
     if not key in db.keys():
       pass
+    # question 0
     elif db[key] == 0:
-      if "c++" in message.content.lower() or "c++" == message.content.lower():
-        db[key] = 1
+      student_id = message.content
+      year = int(student_id[:2])
+      faculty = int(student_id[2:4])
+      degree = int(student_id[4])
+      curriculum = int(student_id[5])
+      correct_curriculum = [0,1,2,5]
 
-        await asyncio.sleep(3)
-        await user.send(bot_messages.verify_question_2)
-    elif db[key] == 1:
-      if message.content.lower() == "1" or message.content.lower() == "2":
-        db[key] = 2
+      print(student_id, year, faculty, degree, curriculum)
+
+      await asyncio.sleep(3)
+      if len(student_id) != 9 or year > config.current_year or faculty != 6 or degree != 1 or (curriculum not in correct_curriculum):
+        await user.send(bot_messages.verify_invalid_0_0)
+      else:
+        if year < (config.current_year - 8):
+          await user.send(bot_messages.verify_question_alumni_0)
+          db[key] = "alumni"
+        elif curriculum == 0 or curriculum == 2:
+          await user.send(bot_messages.verify_question_cpe_0)
+          db[key] = "cpe"
+        elif curriculum == 1 or curriculum == 5:
+          await user.send(bot_messages.verify_question_isne_0)
+          db[key] = "isne"
+    
+    # question 0 (y/n)
+    elif db[key] == "cpe" or db[key] == "isne" or db[key] == "alumni":
+      await asyncio.sleep(3)
+      await user.send(bot_messages.verify_question_1)
+      if "y" in message.content.lower() or "y" == message.content.lower():
+        db[key] = db[key]+"_y_1"
+      elif "n" in message.content.lower() or "n" == message.content.lower():
+        db[key] = db[key]+"_n_1"
         
-        await asyncio.sleep(3)
+
+    # question 1
+    elif "1" in db[key]:
+      await asyncio.sleep(3)
+      if "c++" in message.content.lower() or "c++" == message.content.lower():
+        db[key] = db[key][:-1]+"2"
+        await user.send(bot_messages.verify_question_2)
+      else:
+        await user.send(bot_messages.verify_wrong_answer_tryagain)
+
+    # question 2
+    elif "2" in db[key]:
+      await asyncio.sleep(3)
+      if "4" in message.content.lower() or message.content.lower() == "4":
+        db[key] = db[key][:-1]+"3"
+        
         guild = await get_guild()
         member = await guild.fetch_member(user.id)
+        
         role = discord.utils.get(guild.roles, id=role_ids.verified)
         await member.add_roles(role)
-        await member.send(bot_messages.verified_message)
-    
-    
-    
-  
+
+        if "cpe" in db[key]:
+          roleid = role_ids.cpe
+        elif "isne" in db[key]:
+          roleid = role_ids.isne
+        elif "alumni" in db[key]:
+          roleid = role_ids.alumni
+        role = discord.utils.get(guild.roles, id=roleid)
+        await member.add_roles(role)
+        
+        await member.send(bot_messages.verified_message.format(role.name))
+      else:
+        await user.send(bot_messages.verify_wrong_answer_tryagain)
 
 @bot.event
 async def on_raw_reaction_add(payload):
