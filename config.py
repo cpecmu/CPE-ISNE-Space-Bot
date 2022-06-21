@@ -6,4 +6,5 @@ current_year = 65
 debug_msg = True
 
 flush_db = False
-keep_alive = False
+display_db = True
+keep_alive = True

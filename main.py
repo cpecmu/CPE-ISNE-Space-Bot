@@ -13,7 +13,11 @@ from keep_alive import keep_alive
 if config.flush_db:
   for key in db.keys():
     del db[key]
-    
+
+if config.display_db:
+  for key in db.keys():
+    print(key,db[key])
+
 ##################
     
 intents = discord.Intents.default()
@@ -32,14 +36,14 @@ async def on_ready():
     print("\n".join([(str(r)+" = "+str(r.id)) for r in guild.roles]), '\n')
   
   # check for role message
-  if not "role_msg_id" in db.keys():
-    db["role_msg_id"] = await send_role_message()
+  # if not "role_msg_id" in db.keys():
+  #   db["role_msg_id"] = await send_role_message()
 
-  channel = bot.get_channel(channel_ids.roles)
-  role_message = await channel.fetch_message(db["role_msg_id"])
+  # channel = bot.get_channel(channel_ids.roles)
+  # role_message = await channel.fetch_message(db["role_msg_id"])
 
-  if config.debug_msg:
-    print("Role Message:", role_message.content, '\n')
+  # if config.debug_msg:
+  #   print("Role Message:", role_message.content, '\n')
 
 async def get_guild():
   return bot.get_guild(config.server_id) 
@@ -138,7 +142,7 @@ async def on_message(message):
     # question 2
     elif "2" in db[key]:
       await asyncio.sleep(3)
-      if "4" in message.content.lower() or message.content.lower() == "4":
+      if message.content.lower() == "4":
         db[key] = db[key][:-1]+"3"
         
         guild = await get_guild()
